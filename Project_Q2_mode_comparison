@@ -1,0 +1,83 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import cm
+
+#parameters
+L = 2*np.pi
+c = 2
+N = 300
+
+dx = L/(N-1)
+CFL = 0.4
+dt = CFL * dx / c
+alpha = (c * dt / dx)**2
+tmax = 6
+nt = int(tmax/dt)
+x = np.linspace(0, L, N)
+
+#initial condition for just n=1 mode
+C1 = 1.0
+u_prev = C1 * np.sin(x/2)   #only n = 1 mode as opposed to the whole shebang
+u_prev[0], u_prev[-1] = 0, 0
+
+#first timestep
+u = np.zeros_like(x)
+u_next = np.zeros_like(x)
+
+for i in range(1, N-1):
+    u[i] = u_prev[i] + 0.5 * alpha * (u_prev[i+1] - 2*u_prev[i] + u_prev[i-1])
+
+u[0], u[-1] = 0, 0
+
+#-------------------------------
+#Numerical
+u_storage = []
+t_storage = []
+
+for n in range(nt):
+
+    for i in range(1, N-1):
+        u_next[i] = (2*(1-alpha)*u[i] - u_prev[i] +
+                      alpha*(u[i+1] + u[i-1]))
+
+    u_next[0], u_next[-1] = 0, 0
+
+    u_prev = u.copy()
+    u = u_next.copy()
+
+    u_storage.append(u.copy())
+    t_storage.append(n * dt)
+
+u_storage = np.array(u_storage)
+t_storage = np.array(t_storage)
+
+#---------------------------------
+#Analytical
+
+X, T = np.meshgrid(x, t_storage)
+
+u_analytical = C1 * np.cos(T) * np.sin(X/2)
+
+#-----------------------------
+#Numerical plot
+fig1 = plt.figure()
+ax1 = fig1.add_subplot(111, projection='3d')
+ax1.plot_surface(X, T, u_storage, cmap=cm.plasma)
+ax1.set_title("Numerical Solution: n = 1 Mode")
+ax1.set_xlabel("x")
+ax1.set_ylabel("t")
+ax1.set_zlabel("u(x,t)")
+
+#--------------------------------
+#Analytical
+fig2 = plt.figure()
+ax2 = fig2.add_subplot(111, projection='3d')
+ax2.plot_surface(X, T, u_analytical, cmap=cm.viridis)
+ax2.set_title("Analytical Solution: n = 1 Mode")
+ax2.set_xlabel("x")
+ax2.set_ylabel("t")
+ax2.set_zlabel("u(x,t)")
+
+
+
+plt.show()
