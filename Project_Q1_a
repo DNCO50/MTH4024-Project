@@ -1,0 +1,83 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
+import scipy as sp
+from matplotlib import cm
+
+#parameters
+L = 5 #Change this as desired to get the graph for the desired L
+D = 1.0          
+C = 1.0           
+N = 250       
+dx = L / (N - 1)
+#for stability alpha must be < 1/2
+#alpha = D * dt / dx**2 
+alpha = 0.4
+dt = 0.4 * dx**2 / D 
+tmax = 4.0
+nt = int(tmax / dt)
+beta = 1.0 + C * dt
+
+
+#-------------Grids for variables------------
+#x_grid = np.arange(-L/2,L/2,dx)
+x_grid = np.linspace(-L/2,L/2,N)
+#In the x grid, since we know the two endpoints from the boundary condition we are particularly interested in the interior points
+x_interior = x_grid[1:-1]
+ 
+t_grid = np.linspace(0,tmax,nt)
+#--------------------------------------------
+
+u = np.zeros_like(x_grid)
+center = (N-1)//2 #rounds down - arbitrary choice though
+print(center)
+u[center] = 1/dx
+
+snapshot_gap = max(1,nt//400) #don't want to overcrowd plot
+
+#-------looping through time to evolve it
+
+u_storage = []
+t_storage=[]
+for n in range(nt):
+    updated_u = u.copy()
+    for i in range(1,N-1): #ONLY WANT TO UPDATE INTERIOR POINTS SINCE BOUNDARY CONDITIONS ARE FIXED AT 0
+        updated_u[i] = alpha*(u[i+1] - 2.0*u[i] + u[i-1]) + beta*u[i]
+    u = updated_u
+
+
+    #plotting in 2D
+    #if n % snapshot_gap==0: #Doing this because it's super cluttered otherwise - comment out after to see full plot
+    #   plt.plot(x_grid,u)
+
+    #for the purpose of plotting in 3D
+    if n% snapshot_gap ==0:
+        u_storage.append(u.copy())
+        t_storage.append(n*dt)
+t_storage = np.array(t_storage)
+u_storage=np.array(u_storage)
+
+#color map
+x,t = np.meshgrid(x_grid,t_storage)
+
+fig, ax = plt.subplots(subplot_kw={"projection": "3d"},figsize=(6,6))
+
+#surface plot
+surf = ax.plot_surface(x, t, u_storage, cmap=cm.plasma,
+                       linewidth=0, antialiased=False)
+
+#adds the gradient (probably a better way to do this but whatever)
+#fig.colorbar(surf, shrink=0) #shrink = 0 removes the colorbar entirely
+ax.view_init(elev=19, azim=-60)
+plt.title(f"Numerical Plot of the Diffusion Equation; L={L}")
+plt.xlabel("x")
+plt.ylabel("t")
+plt.show()
+
+
+
+
+
+
+
+
